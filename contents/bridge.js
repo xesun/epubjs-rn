@@ -218,7 +218,18 @@ window.onerror = function (message, file, line, col, error) {
       window.book = book = ePub(url);
 
       window.rendition = rendition = book.renderTo(document.body, settings);
-
+      // rendition.hooks.register('beforeChapterDisplay').pageAnimation = function (callback, renderer) {
+      //   window.setTimeout(function () {
+      //     var style = renderer.doc.createElement("style");
+      //     style.innerHTML = "*{-webkit-transition: transform {t} ease;-moz-transition: tranform {t} ease;-o-transition: transform {t} ease;-ms-transition: transform {t} ease;transition: transform {t} ease;}";
+      //     style.innerHTML = style.innerHTML.split("{t}").join("0.5s");
+      //     renderer.doc.body.appendChild(style);
+      //   }, 100)
+      //   if (callback) {
+      //     callback();
+      //   }
+      // };
+      console.log('eagle',rendition.hooks);
       rendition.hooks.content.register(function (contents, rendition) {
         var doc = contents.document;
         var startPosition = { x: -1, y: -1 };
