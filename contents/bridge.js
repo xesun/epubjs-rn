@@ -1,17 +1,17 @@
 window.onerror = function (message, file, line, col, error) {
-  var msg = JSON.stringify({method:"error", value: message});
+  var msg = JSON.stringify({ method: "error", value: message });
   window.postMessage(msg, "*");
 };
 
 
 
 (function () {
-   var waitForReactNativePostMessageReady;
+  var waitForReactNativePostMessageReady;
 
   function _ready() {
     var contents;
     var targetOrigin = "*";
-    var sendMessage = function(obj) {
+    var sendMessage = function (obj) {
       window.postMessage(JSON.stringify(obj), targetOrigin);
     };
 
@@ -36,18 +36,18 @@ window.onerror = function (message, file, line, col, error) {
     var animating = false;
 
     // debug
-    console.log = function() {
-      sendMessage({method:"log", value: Array.from(arguments)});
+    console.log = function () {
+      sendMessage({ method: "log", value: Array.from(arguments) });
     }
 
-    console.error = function() {
-      sendMessage({method:"error", value: Array.from(arguments)});
+    console.error = function () {
+      sendMessage({ method: "error", value: Array.from(arguments) });
     }
 
     // var isReactNativePostMessageReady = !!window.originalPostMessage;
     var isReactNativePostMessageReady = !!window.originalPostMessage || window.postMessage.toString().indexOf("[native code]") === -1;
     clearTimeout(waitForReactNativePostMessageReady);
-    if(!isReactNativePostMessageReady) {
+    if (!isReactNativePostMessageReady) {
       waitForReactNativePostMessageReady = setTimeout(_ready, 1);
       return;
     }
@@ -218,8 +218,18 @@ window.onerror = function (message, file, line, col, error) {
       window.book = book = ePub(url);
 
       window.rendition = rendition = book.renderTo(document.body, settings);
-
-      rendition.hooks.content.register(function(contents, rendition) {
+      rendition.hooks.register('beforeChapterDisplay').pageAnimation = function (callback, renderer) {
+        window.setTimeout(function () {
+          var style = renderer.doc.createElement("style");
+          style.innerHTML = "*{-webkit-transition: transform {t} ease;-moz-transition: tranform {t} ease;-o-transition: transform {t} ease;-ms-transition: transform {t} ease;transition: transform {t} ease;}";
+          style.innerHTML = style.innerHTML.split("{t}").join("0.5s");
+          renderer.doc.body.appendChild(style);
+        }, 100)
+        if (callback) {
+          callback();
+        }
+      };
+      rendition.hooks.content.register(function (contents, rendition) {
         var doc = contents.document;
         var startPosition = { x: -1, y: -1 };
         var currentPosition = { x: -1, y: -1 };
@@ -237,7 +247,7 @@ window.onerror = function (message, file, line, col, error) {
           isLongPress = false;
 
           if (isWebkit) {
-            for (var i=0; i < e.targetTouches.length; i++) {
+            for (var i = 0; i < e.targetTouches.length; i++) {
               f = e.changedTouches[i].force;
               if (f >= 0.8 && !preventTap) {
                 target = e.changedTouches[i].target;
@@ -250,7 +260,7 @@ window.onerror = function (message, file, line, col, error) {
 
                 cfi = contents.cfiFromNode(target).toString();
 
-                sendMessage({method:"longpress", position: currentPosition, cfi: cfi});
+                sendMessage({ method: "longpress", position: currentPosition, cfi: cfi });
                 isLongPress = false;
                 preventTap = true;
               }
@@ -258,7 +268,7 @@ window.onerror = function (message, file, line, col, error) {
           }
 
 
-          longPressTimer = setTimeout(function() {
+          longPressTimer = setTimeout(function () {
             target = e.targetTouches[0].target;
 
             if (target.getAttribute("ref") === "epubjs-mk") {
@@ -267,7 +277,7 @@ window.onerror = function (message, file, line, col, error) {
 
             cfi = contents.cfiFromNode(target).toString();
 
-            sendMessage({method:"longpress", position: currentPosition, cfi: cfi});
+            sendMessage({ method: "longpress", position: currentPosition, cfi: cfi });
             preventTap = true;
           }, touchduration);
         }
@@ -282,35 +292,35 @@ window.onerror = function (message, file, line, col, error) {
           var cfi;
           clearTimeout(longPressTimer);
 
-          if(preventTap) {
+          if (preventTap) {
             preventTap = false;
             return;
           }
 
-          if(Math.abs(startPosition.x - currentPosition.x) < 2 &&
-             Math.abs(startPosition.y - currentPosition.y) < 2) {
+          if (Math.abs(startPosition.x - currentPosition.x) < 2 &&
+            Math.abs(startPosition.y - currentPosition.y) < 2) {
 
             var target = e.changedTouches[0].target;
 
             if (target.getAttribute("ref") === "epubjs-mk" ||
-                target.getAttribute("ref") === "epubjs-hl" ||
-                target.getAttribute("ref") === "epubjs-ul") {
+              target.getAttribute("ref") === "epubjs-hl" ||
+              target.getAttribute("ref") === "epubjs-ul") {
               return;
             }
 
             cfi = contents.cfiFromNode(target).toString();
 
-            if(isLongPress) {
-              sendMessage({method:"longpress", position: currentPosition, cfi: cfi});
+            if (isLongPress) {
+              sendMessage({ method: "longpress", position: currentPosition, cfi: cfi });
               isLongPress = false;
             } else {
-              setTimeout(function() {
-                if(preventTap) {
+              setTimeout(function () {
+                if (preventTap) {
                   preventTap = false;
                   isLongPress = false;
                   return;
                 }
-                sendMessage({method:"press", position: currentPosition, cfi: cfi});
+                sendMessage({ method: "press", position: currentPosition, cfi: cfi });
               }, 10);
             }
           }
@@ -329,19 +339,19 @@ window.onerror = function (message, file, line, col, error) {
 
             cfi = contents.cfiFromNode(target).toString();
 
-            sendMessage({method:"longpress", position: currentPosition, cfi: cfi});
+            sendMessage({ method: "longpress", position: currentPosition, cfi: cfi });
             isLongPress = false;
             preventTap = true;
           }
         }
 
-        if(!isWebkit) {
+        if (!isWebkit) {
 
           var prevX;
           var flick = 0;
           var pan = false;
 
-          doc.addEventListener('touchmove', function(e) {
+          doc.addEventListener('touchmove', function (e) {
             var screenX = e.touches[0].screenX;
             var delta = prevX - screenX;
 
@@ -374,7 +384,7 @@ window.onerror = function (message, file, line, col, error) {
             e.prevenatDefault();
           }, { capture: true, passive: false });
 
-          doc.addEventListener('touchstart', function(e) {
+          doc.addEventListener('touchstart', function (e) {
 
             touchStartHandler(e);
 
@@ -382,7 +392,7 @@ window.onerror = function (message, file, line, col, error) {
 
           }, { capture: false, passive: true });
 
-          doc.addEventListener('touchend', function(e) {
+          doc.addEventListener('touchend', function (e) {
 
             touchEndHandler(e);
 
@@ -390,7 +400,7 @@ window.onerror = function (message, file, line, col, error) {
               return;
             }
 
-            if(!animating) {
+            if (!animating) {
 
               if (flick === 1) {
                 snap(last_known_scroll_position + snapWidth + 10);
@@ -421,38 +431,38 @@ window.onerror = function (message, file, line, col, error) {
 
       }.bind(this));
 
-      rendition.on("relocated", function(location){
-        sendMessage({method:"relocated", location: location});
+      rendition.on("relocated", function (location) {
+        sendMessage({ method: "relocated", location: location });
       });
 
       rendition.on("selected", function (cfiRange) {
         preventTap = true;
-        sendMessage({method:"selected", cfiRange: cfiRange});
+        sendMessage({ method: "selected", cfiRange: cfiRange });
       });
 
       rendition.on("markClicked", function (cfiRange, data) {
         preventTap = true;
-        sendMessage({method:"markClicked", cfiRange: cfiRange, data: data});
+        sendMessage({ method: "markClicked", cfiRange: cfiRange, data: data });
       });
 
       rendition.on("rendered", function (section) {
-        sendMessage({method:"rendered", sectionIndex: section.index});
+        sendMessage({ method: "rendered", sectionIndex: section.index });
       });
 
       rendition.on("added", function (section) {
-        sendMessage({method:"added", sectionIndex: section.index});
+        sendMessage({ method: "added", sectionIndex: section.index });
       });
 
       rendition.on("removed", function (section) {
-        sendMessage({method:"removed", sectionIndex: section.index});
+        sendMessage({ method: "removed", sectionIndex: section.index });
       });
 
-      rendition.on("resized", function(size){
-        sendMessage({method:"resized", size: size});
+      rendition.on("resized", function (size) {
+        sendMessage({ method: "resized", size: size });
       });
 
       // replay messages
-      rendition.started.then(function() {
+      rendition.started.then(function () {
         var msg;
         for (var i = 0; i < q.length; i++) {
           msg = q.shift();
@@ -460,10 +470,10 @@ window.onerror = function (message, file, line, col, error) {
         }
       });
 
-      book.ready.then(function(){
+      book.ready.then(function () {
         _isReady = true;
 
-        sendMessage({method:"ready"});
+        sendMessage({ method: "ready" });
 
       });
 
@@ -476,19 +486,19 @@ window.onerror = function (message, file, line, col, error) {
     // React native uses document for postMessages
     document.addEventListener("message", onMessage);
 
-    sendMessage({method:"loaded", value: true});
+    sendMessage({ method: "loaded", value: true });
 
     // Snap scrolling
-    if(!isWebkit) {
+    if (!isWebkit) {
 
       // Disable momentum scrolling
       document.getElementsByTagName('body')[0].style.overflow = "hidden";
 
-      window.addEventListener('scroll', function(e) {
+      window.addEventListener('scroll', function (e) {
         last_known_scroll_position = window.scrollX;
       });
 
-      window.addEventListener('resize', function(e) {
+      window.addEventListener('resize', function (e) {
         resizeCanceler = true;
         snapWidth = window.innerWidth;
         animating = false;
@@ -503,65 +513,65 @@ window.onerror = function (message, file, line, col, error) {
     }
 
     function scrollToX(scrollTargetX, speed, easing) {
-        var scrollX = window.scrollX,
-            scrollTargetX = scrollTargetX || 0,
-            speed = speed || 2000,
-            easing = easing || 'easeOutSine',
-            currentTime = 0;
+      var scrollX = window.scrollX,
+        scrollTargetX = scrollTargetX || 0,
+        speed = speed || 2000,
+        easing = easing || 'easeOutSine',
+        currentTime = 0;
 
-        animating = true;
+      animating = true;
 
-        // min time .1, max time .8 seconds
-        var time = Math.max(.1, Math.min(Math.abs(scrollX - scrollTargetX) / speed, .8));
+      // min time .1, max time .8 seconds
+      var time = Math.max(.1, Math.min(Math.abs(scrollX - scrollTargetX) / speed, .8));
 
-        // easing equations from https://github.com/danro/easing-js/blob/master/easing.js
-        var PI_D2 = Math.PI / 2,
+      // easing equations from https://github.com/danro/easing-js/blob/master/easing.js
+      var PI_D2 = Math.PI / 2,
         easingEquations = {
-            easeOutSine: function (pos) {
-                return Math.sin(pos * (Math.PI / 2));
-            },
-            easeInOutSine: function (pos) {
-                return (-0.5 * (Math.cos(Math.PI * pos) - 1));
-            },
-            easeInOutQuint: function (pos) {
-                if ((pos /= 0.5) < 1) {
-                    return 0.5 * Math.pow(pos, 5);
-                }
-                return 0.5 * (Math.pow((pos - 2), 5) + 2);
+          easeOutSine: function (pos) {
+            return Math.sin(pos * (Math.PI / 2));
+          },
+          easeInOutSine: function (pos) {
+            return (-0.5 * (Math.cos(Math.PI * pos) - 1));
+          },
+          easeInOutQuint: function (pos) {
+            if ((pos /= 0.5) < 1) {
+              return 0.5 * Math.pow(pos, 5);
             }
+            return 0.5 * (Math.pow((pos - 2), 5) + 2);
+          }
         };
 
-        // add animation loop
-        function tick() {
-            currentTime += 1 / 60;
+      // add animation loop
+      function tick() {
+        currentTime += 1 / 60;
 
-            var p = currentTime / time;
-            var t = easingEquations[easing](p);
+        var p = currentTime / time;
+        var t = easingEquations[easing](p);
 
-            if (touchCanceler) {
-              return;
-            }
-
-            if (resizeCanceler) {
-              resizeCanceler = false;
-              return;
-            }
-
-            if (p < 1) {
-                window.requestAnimationFrame(tick);
-
-                window.scrollTo(scrollX + ((scrollTargetX - scrollX) * t), 0);
-            } else {
-                window.scrollTo(scrollTargetX, 0);
-                animating = false;
-            }
+        if (touchCanceler) {
+          return;
         }
 
-        tick();
+        if (resizeCanceler) {
+          resizeCanceler = false;
+          return;
+        }
+
+        if (p < 1) {
+          window.requestAnimationFrame(tick);
+
+          window.scrollTo(scrollX + ((scrollTargetX - scrollX) * t), 0);
+        } else {
+          window.scrollTo(scrollTargetX, 0);
+          animating = false;
+        }
+      }
+
+      tick();
     }
   }
 
-  if ( document.readyState === 'complete' ) {
+  if (document.readyState === 'complete') {
     _ready();
   } else {
     window.addEventListener("load", _ready, false);
