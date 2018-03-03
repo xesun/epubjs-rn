@@ -3,6 +3,8 @@ window.onerror = function (message, file, line, col, error) {
   window.postMessage(msg, "*");
 };
 
+
+
 (function () {
    var waitForReactNativePostMessageReady;
 
