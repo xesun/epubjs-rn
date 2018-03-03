@@ -46,7 +46,17 @@ class Rendition extends Component {
 
   constructor(props) {
     super(props);
-
+    console.log('loaded')
+    EPUBJS.Hooks.register('beforeChapterDisplay').swipeDetection = function (callback, renderer) {
+      var script = renderer.doc.createElement('script');
+      script.text = "!function(a,b,c){function f(a){d=a.touches[0].clientX,e=a.touches[0].clientY}function g(f){if(d&&e){var g=f.touches[0].clientX,h=f.touches[0].clientY,i=d-g,j=e-h;Math.abs(i)>Math.abs(j)&&(i>a?b():i<0-a&&c()),d=null,e=null}}var d=null,e=null;document.addEventListener('touchstart',f,!1),document.addEventListener('touchmove',g,!1)}";
+      /* (threshold, leftswipe, rightswipe) */
+      script.text += "(10,function(){parent.ePubViewer.Book.nextPage()},function(){parent.ePubViewer.Book.prevPage()});"
+      renderer.doc.head.appendChild(script);
+      if (callback) {
+        callback();
+      }
+    };
     this.state = {
       loaded: false,
     }
@@ -150,9 +160,9 @@ class Rendition extends Component {
     if (!this._webviewLoaded) return;
 
     if (spine) {
-      this.sendToBridge("display", [{ "spine": spine}]);
+      this.sendToBridge("display", [{ "spine": spine }]);
     } else if (target) {
-      this.sendToBridge("display", [{ "target": target}]);
+      this.sendToBridge("display", [{ "target": target }]);
     } else {
       this.sendToBridge("display");
     }
@@ -191,29 +201,29 @@ class Rendition extends Component {
     }
   }
 
-  highlight (cfiRange, data) {
+  highlight(cfiRange, data) {
     this.sendToBridge("highlight", [cfiRange, data]);
   }
 
-  underline (cfiRange, data) {
+  underline(cfiRange, data) {
     this.sendToBridge("underline", [cfiRange, data]);
   }
 
-  mark (cfiRange, data) {
+  mark(cfiRange, data) {
     this.sendToBridge("mark", [cfiRange, data]);
-	}
+  }
 
-  unhighlight (cfiRange, data) {
+  unhighlight(cfiRange, data) {
     this.sendToBridge("removeAnnotation", [cfiRange, data]);
-	}
+  }
 
-	ununderline (cfiRange, data) {
+  ununderline(cfiRange, data) {
     this.sendToBridge("removeAnnotation", [cfiRange, data]);
-	}
+  }
 
-	unmark (cfiRange, data) {
+  unmark(cfiRange, data) {
     this.sendToBridge("removeAnnotation", [cfiRange, data]);
-	}
+  }
 
   destroy() {
 
@@ -275,20 +285,20 @@ class Rendition extends Component {
       }
       case "rendered": {
         if (!this.state.loaded) {
-          this.setState({loaded: true});
+          this.setState({ loaded: true });
         }
         break;
       }
       case "relocated": {
-        let {location} = decoded;
+        let { location } = decoded;
         this._relocated(location);
         if (!this.state.loaded) {
-          this.setState({loaded: true});
+          this.setState({ loaded: true });
         }
         break;
       }
       case "resized": {
-        let {size} = decoded;
+        let { size } = decoded;
         // console.log("resized", size.width, size.height);
         break;
       }
@@ -301,22 +311,22 @@ class Rendition extends Component {
         break;
       }
       case "selected": {
-        let {cfiRange} = decoded;
+        let { cfiRange } = decoded;
         this._selected(cfiRange);
         break;
       }
       case "markClicked": {
-        let {cfiRange, data} = decoded;
+        let { cfiRange, data } = decoded;
         this._markClicked(cfiRange, data);
         break;
       }
       case "added": {
-        let {sectionIndex} = decoded;
+        let { sectionIndex } = decoded;
         this.props.onViewAdded && this.props.onViewAdded(sectionIndex);
         break;
       }
       case "removed": {
-        let {sectionIndex} = decoded;
+        let { sectionIndex } = decoded;
         this.props.beforeViewRemoved && this.props.beforeViewRemoved(sectionIndex);
         break;
       }
@@ -363,13 +373,13 @@ class Rendition extends Component {
     let loader = (
       <TouchableOpacity onPress={() => this.props.onPress('')} style={styles.loadScreen}>
         <View style={[styles.loadScreen, {
-            backgroundColor: this.props.backgroundColor || "#FFFFFF"
-          }]}>
-            <ActivityIndicator
-                color={this.props.color || "black"}
-                size={this.props.size || "large"}
-                style={{ flex: 1 }}
-              />
+          backgroundColor: this.props.backgroundColor || "#FFFFFF"
+        }]}>
+          <ActivityIndicator
+            color={this.props.color || "black"}
+            size={this.props.size || "large"}
+            style={{ flex: 1 }}
+          />
         </View>
       </TouchableOpacity>
     );
@@ -382,7 +392,7 @@ class Rendition extends Component {
       <View ref="framer" style={styles.container}>
         <WebViewer
           ref="webviewbridge"
-          source={{html: EMBEDDED_HTML, baseUrl: this.props.url}}
+          source={{ html: EMBEDDED_HTML, baseUrl: this.props.url }}
           style={[styles.manager, {
             backgroundColor: this.props.backgroundColor || "#FFFFFF"
           }]}
