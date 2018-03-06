@@ -20,7 +20,8 @@ import { readFileSync } from "fs";
 
 const URL = require("epubjs/libs/url/url-polyfill.js");
 
-const EPUBJS = readFileSync(__dirname + "/../node_modules/epubjs/dist/epub.min.js", "utf8");
+const EPUBJS = readFileSync(__dirname + "/../node_modules/epubjs/build/epub.min.js", "utf8");
+const HOOKS = readFileSync(__dirname + "/../node_modules/epubjs/build/epub.min.js", "utf8");
 const BRIDGE = readFileSync(__dirname + "/../contents/bridge.js", "utf8");
 
 const EMBEDDED_HTML = `
@@ -31,7 +32,34 @@ const EMBEDDED_HTML = `
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <title>epubjs</title>
   <script>${EPUBJS}</script>
+  <script>${HOOKS}</script>
   <script>${BRIDGE}</script>
+  <script>
+    EPUBJS.Hooks.register('beforeChapterDisplay').pageAnimation = function (callback, renderer) {
+      window.setTimeout(function () {
+        var style = renderer.doc.createElement("style");
+        style.innerHTML = "*{-webkit-transition: transform {t} ease;-moz-transition: tranform {t} ease;-o-transition: transform {t} ease;-ms-transition: transform {t} ease;transition: transform {t} ease;}";
+        style.innerHTML = style.innerHTML.split("{t}").join("0.5s");
+        renderer.doc.body.appendChild(style);
+      }, 100)
+      if (callback) {
+        callback();
+      }
+    };
+    EPUBJS.Hooks.register('beforeChapterDisplay').swipeDetection = function (callback, renderer) {
+      var script = renderer.doc.createElement('script');
+      script.text = "!function(a,b,c){function f(a){d=a.touches[0].clientX,e=a.touches[0].clientY}function g(f){if(d&&e){var g=f.touches[0].clientX,h=f.touches[0].clientY,i=d-g,j=e-h;Math.abs(i)>Math.abs(j)&&(i>a?b():i<0-a&&c()),d=null,e=null}}var d=null,e=null;document.addEventListener('touchstart',f,!1),document.addEventListener('touchmove',g,!1)}";
+      /* (threshold, leftswipe, rightswipe) */
+      script.text += "(10,function(){parent.ePubViewer.Book.nextPage()},function(){parent.ePubViewer.Book.prevPage()});"
+      renderer.doc.head.appendChild(script);
+      if (callback) {
+        callback();
+      }
+    };
+    EPUBJS.Render.Iframe.prototype.setLeft = function (leftPos) {
+      this.docEl.style[this.transform] = 'translate(' + (-leftPos) + 'px, 0)';
+    }
+  </script>
   <style>
     body {
       margin: 0;
@@ -47,7 +75,7 @@ class Rendition extends Component {
   constructor(props) {
     super(props);
     console.log('loaded')
-  
+
     this.state = {
       loaded: false,
     }
